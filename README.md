@@ -4,7 +4,8 @@ Innovation Month 2026 "Build a Bureaucrat Bot" entry (repo name `term-comparison
 
 Shows how ordinary legal terms (e.g. "personal information", "australian resident") are defined across Commonwealth Acts, with citations.
 
-[search.gov.au](https://search.gov.au)'s Align stream ("Common Ground", Dept of Finance, alpha — see [Government content is AI food](https://www.youtube.com/watch?v=X5UAWFl7-FE), APS Digital Profession Innovation Month, July 2026) does this at whole-of-government scale and routes real divergences to SES for resolution.
+> [!NOTE]
+> [search.gov.au](https://search.gov.au)'s Align stream ("Common Ground", Dept of Finance, alpha — see [Government content is AI food](https://www.youtube.com/watch?v=X5UAWFl7-FE), APS Digital Profession Innovation Month, July 2026) does this at whole-of-government scale and routes real divergences to SES for resolution.
 
 ## Uses
 
