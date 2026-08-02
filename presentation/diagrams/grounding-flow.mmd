@@ -1,0 +1,10 @@
+graph TD
+    A[LLM proposes differences] --> B{Each difference in<br/>differences list}
+    B -->|quote found in source text| C[Shown to user]
+    B -->|quote not found| D[Dropped, not shown]
+    A --> E[LLM proposes summary sentence]
+    E -->|no verification gate| F[Shown to user unchecked]
+
+    style C fill:#d4edda,stroke:#28a745
+    style D fill:#f8d7da,stroke:#dc3545
+    style F fill:#fff3cd,stroke:#ffc107

@@ -1,0 +1,7 @@
+graph LR
+    A[Vue frontend] -->|search term| B[FastAPI on Modal]
+    B -->|resolve| C[DefinitionResolver<br/>lex-au-graph]
+    C -->|candidate definitions| B
+    B -->|quote-verify differences| D[Claude API]
+    D -->|verified summary or fallback| B
+    B -->|response| A
