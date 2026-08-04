@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import type { ComparisonResponse } from "./types";
 import { detectCrossReference } from "./crossref";
 import { startTour, hasSeenTour } from "./tour";
+import { track } from "./analytics";
 import DefinitionPanel from "./components/DefinitionPanel.vue";
 import TermBrowser from "./components/TermBrowser.vue";
 import CorpusStats from "./components/CorpusStats.vue";
@@ -41,8 +42,21 @@ function stopDots() {
 
 onUnmounted(stopDots);
 
+function launchTour(source: "auto" | "manual"): void {
+  track("tour_started", { source });
+  startTour(
+    () => track("tour_completed"),
+    () => track("tour_cancelled"),
+  );
+}
+
+function openAbout(): void {
+  aboutOpen.value = true;
+  track("about_opened");
+}
+
 onMounted(() => {
-  if (!hasSeenTour()) startTour();
+  if (!hasSeenTour()) launchTour("auto");
 });
 
 const mainLayoutEl = ref<HTMLElement | null>(null);
@@ -144,8 +158,8 @@ async function search(t: string) {
       <div class="app-title">
         <div class="title-row">
           <h1>Act Alike (IM2026)</h1>
-          <button type="button" class="help-btn" @click="aboutOpen = true" aria-label="How Act Alike works">?</button>
-          <button type="button" class="tour-btn" @click="startTour">Take the tour</button>
+          <button type="button" class="help-btn" @click="openAbout" aria-label="How Act Alike works">?</button>
+          <button type="button" class="tour-btn" @click="launchTour('manual')">Take the tour</button>
         </div>
         <p class="subtitle">Term comparison across Commonwealth Acts: does this legal term mean the same thing everywhere it's used?</p>
       </div>

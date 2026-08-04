@@ -3,6 +3,9 @@ import { mount, flushPromises } from "@vue/test-utils";
 import App from "../src/App.vue";
 import { TOUR_SEEN_KEY } from "../src/tour";
 
+vi.mock("../src/analytics", () => ({ track: vi.fn() }));
+import { track } from "../src/analytics";
+
 const RESPONSE = {
   term: "personal information",
   definitions: [
@@ -336,6 +339,38 @@ describe("App", () => {
       await wrapper.find(".tour-btn").trigger("click");
       expect(document.querySelector(".driver-popover")).not.toBeNull();
       wrapper.unmount();
+    });
+  });
+
+  describe("analytics events", () => {
+    beforeEach(() => {
+      (track as ReturnType<typeof vi.fn>).mockClear();
+    });
+
+    it("tracks about_opened when the help button is clicked", async () => {
+      const wrapper = mount(App);
+      await wrapper.find(".help-btn").trigger("click");
+      expect(track).toHaveBeenCalledWith("about_opened");
+    });
+
+    it("tracks tour_started with source=auto on first visit", async () => {
+      localStorage.removeItem(TOUR_SEEN_KEY);
+      const wrapper = mount(App, { attachTo: document.body });
+      await wrapper.vm.$nextTick();
+      expect(track).toHaveBeenCalledWith("tour_started", { source: "auto" });
+      wrapper.unmount();
+      document.querySelector(".driver-popover")?.remove();
+      document.querySelector(".driver-overlay")?.remove();
+    });
+
+    it("tracks tour_started with source=manual from the Take the tour button", async () => {
+      localStorage.setItem(TOUR_SEEN_KEY, "1");
+      const wrapper = mount(App, { attachTo: document.body });
+      await wrapper.find(".tour-btn").trigger("click");
+      expect(track).toHaveBeenCalledWith("tour_started", { source: "manual" });
+      wrapper.unmount();
+      document.querySelector(".driver-popover")?.remove();
+      document.querySelector(".driver-overlay")?.remove();
     });
   });
 });

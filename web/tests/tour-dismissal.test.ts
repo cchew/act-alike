@@ -35,4 +35,38 @@ describe("tour dismissal", () => {
     expect(document.querySelector(".driver-popover")).not.toBeNull();
     expect(hasSeenTour()).toBe(false);
   });
+
+  it("calls onCancel, not onComplete, when dismissed on the first step", async () => {
+    const onComplete = vi.fn();
+    const onCancel = vi.fn();
+    startTour(onComplete, onCancel);
+
+    document.querySelector(".driver-popover")?.remove();
+
+    await vi.waitFor(() => {
+      expect(onCancel).toHaveBeenCalledTimes(1);
+    });
+    expect(onComplete).not.toHaveBeenCalled();
+  });
+
+  it("calls onComplete, not onCancel, when dismissed on the final step", async () => {
+    const onComplete = vi.fn();
+    const onCancel = vi.fn();
+    const tour = startTour(onComplete, onCancel);
+
+    // Advance through all 5 steps (#term-search, .flagship-nav,
+    // .term-browser-toggle, .results-block, .help-btn) via driver.js's own
+    // real navigation, then dismiss.
+    tour.moveNext();
+    tour.moveNext();
+    tour.moveNext();
+    tour.moveNext();
+
+    document.querySelector(".driver-popover")?.remove();
+
+    await vi.waitFor(() => {
+      expect(onComplete).toHaveBeenCalledTimes(1);
+    });
+    expect(onCancel).not.toHaveBeenCalled();
+  });
 });
