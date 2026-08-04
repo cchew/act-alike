@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "term-comparison"
 version = "0.1.4"
-description = "IM2026 'Build a Bureaucrat Bot' entry — legislative term-comparison tool over lex-au-graph"
+description = "Legislative term-comparison tool across Commonwealth Acts, built on lex-au-graph — started as an IM2026 'Build a Bureaucrat Bot' entry"
 authors = [{name = "Ching Chew", email = "ching.chew@gmail.com"}]
 license = {text = "MIT"}
 requires-python = ">=3.12"

@@ -30,6 +30,7 @@ onUnmounted(() => {
       <section class="modal-section">
         <h2>What this does</h2>
         <p>Act Alike compares how the same legal term is defined across different Commonwealth Acts of Parliament, with citations back to the source text.</p>
+        <p>It started as an entry for the Australian Public Service's Innovation Month 2026 "Build a Bureaucrat Bot" challenge, and has kept growing since.</p>
       </section>
 
       <section class="modal-section">

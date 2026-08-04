@@ -188,7 +188,7 @@ async function search(t: string) {
     <header class="app-header">
       <div class="app-title">
         <div class="title-row">
-          <h1>Act Alike (IM2026)</h1>
+          <h1>Act Alike</h1>
           <button type="button" class="help-btn" @click="openAbout" aria-label="How Act Alike works">?</button>
           <button type="button" class="tour-btn" @click="launchTour('manual')">Take the tour</button>
         </div>

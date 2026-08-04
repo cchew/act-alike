@@ -60,4 +60,10 @@ describe("AboutModal", () => {
     await wrapper.vm.$nextTick();
     expect(wrapper.emitted("close")).toHaveLength(1);
   });
+
+  it("mentions Act Alike started as an IM2026 entry", () => {
+    const wrapper = mount(AboutModal, { props: { open: true } });
+    expect(wrapper.text()).toContain("started as an entry");
+    expect(wrapper.text()).toContain("Innovation Month 2026");
+  });
 });
