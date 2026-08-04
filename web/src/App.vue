@@ -4,6 +4,7 @@ import type { ComparisonResponse } from "./types";
 import { detectCrossReference } from "./crossref";
 import { startTour, hasSeenTour } from "./tour";
 import { track } from "./analytics";
+import { termToPath, termFromPath } from "./permalink";
 import DefinitionPanel from "./components/DefinitionPanel.vue";
 import TermBrowser from "./components/TermBrowser.vue";
 import CorpusStats from "./components/CorpusStats.vue";
@@ -57,6 +58,26 @@ function openAbout(): void {
 
 onMounted(() => {
   if (!hasSeenTour()) launchTour("auto");
+});
+
+function handlePopState(): void {
+  const t = termFromPath(window.location.pathname);
+  if (t) {
+    search(t);
+  } else {
+    term.value = "";
+    result.value = null;
+  }
+}
+
+onMounted(() => {
+  window.addEventListener("popstate", handlePopState);
+  const initial = termFromPath(window.location.pathname);
+  if (initial) search(initial);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("popstate", handlePopState);
 });
 
 const mainLayoutEl = ref<HTMLElement | null>(null);
@@ -136,6 +157,9 @@ async function search(t: string) {
     result.value = quick;
     loading.value = false;
     track("term_compared", { term: t, is_flagship: FLAGSHIP_TERMS.includes(t) });
+
+    const path = termToPath(t);
+    if (window.location.pathname !== path) window.history.pushState(null, "", path);
 
     if (quick.definitions.length < 2) {
       stopDots();

@@ -87,6 +87,26 @@ test.describe("Term comparison — flagship terms", () => {
     await expect(page.locator(".difference-summary")).toBeVisible();
     await expect(page.locator(".difference-summary")).not.toHaveText("");
   });
+
+  test("direct navigation to /term/:slug for an unknown term shows the not-found message", async ({ page }) => {
+    await page.goto("/term/zzz-not-a-real-term");
+    await expect(page.locator(".load-error")).toContainText("No Commonwealth Act defines");
+  });
+
+  // Requires a real 2+-Act term against a live backend to verify the pushState
+  // round trip end to end (URL updates, then back/forward navigates between
+  // results) — not yet manually verified against a live backend; enable once
+  // that verification has been done, per this file's existing convention for
+  // LLM-cost-incurring or live-corpus-dependent assertions.
+  test.skip("searching a flagship term updates the URL, and back navigation restores the previous state", async ({ page }) => {
+    await page.goto("/");
+    await page.locator(".flagship-btn", { hasText: "personal information" }).click();
+    await page.waitForSelector(".definition-card", { timeout: 30000 });
+    await expect(page).toHaveURL(/\/term\/personal/);
+
+    await page.goBack();
+    await expect(page).toHaveURL("/");
+  });
 });
 
 test.describe("Term comparison — browse list", () => {

@@ -25,6 +25,8 @@ describe("App", () => {
     // Most tests aren't exercising the first-visit tour — mark it seen so
     // driver.js's overlay doesn't appear underfoot in unrelated assertions.
     localStorage.setItem(TOUR_SEEN_KEY, "1");
+    // URL state otherwise leaks between tests via the shared happy-dom window.
+    window.history.pushState(null, "", "/");
     vi.stubGlobal("fetch", vi.fn(async (url: string) => {
       if (url.includes("/terms")) return { ok: true, status: 200, json: async () => [] };
       if (url.includes("/stats")) return { ok: true, status: 200, json: async () => ({ acts: 0, defined_terms: 0, multi_act_terms: 0 }) };
@@ -435,6 +437,34 @@ describe("App", () => {
       await wrapper.find(".search-row").trigger("submit.prevent");
       await flushPromises();
       expect(track).toHaveBeenCalledWith("coverage_warning_shown", { term: "company" });
+    });
+  });
+
+  describe("permalinks", () => {
+    it("pushes /term/:term to the URL after a successful search", async () => {
+      window.history.pushState(null, "", "/");
+      const wrapper = mount(App);
+      await wrapper.get(".flagship-btn").trigger("click");
+      await flushPromises();
+      expect(window.location.pathname).toBe("/term/personal%20information");
+    });
+
+    it("does not push a URL change on a 404", async () => {
+      window.history.pushState(null, "", "/");
+      vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 404, json: async () => ({}) })));
+      const wrapper = mount(App);
+      await wrapper.find(".search-input").setValue("not a real term");
+      await wrapper.find(".search-row").trigger("submit.prevent");
+      await flushPromises();
+      expect(window.location.pathname).toBe("/");
+    });
+
+    it("loads the term from the URL on initial mount", async () => {
+      window.history.pushState(null, "", "/term/personal%20information");
+      const wrapper = mount(App);
+      await flushPromises();
+      expect(wrapper.text()).toContain("Privacy Act 1988");
+      window.history.pushState(null, "", "/");
     });
   });
 });
