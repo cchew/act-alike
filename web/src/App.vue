@@ -112,6 +112,10 @@ const coverageWarning = computed<string | null>(() => {
     : `${names} is referenced above but wasn't returned as a result in its own right — its definition may not be extracted from the corpus yet.`;
 });
 
+watch(coverageWarning, (val) => {
+  if (val) track("coverage_warning_shown", { term: term.value });
+});
+
 async function search(t: string) {
   if (!t.trim()) return;
   term.value = t;
@@ -124,12 +128,14 @@ async function search(t: string) {
     const quickRes = await fetch(`${API_BASE}/definitions/quick?term=${encodeURIComponent(t)}`);
     if (quickRes.status === 404) {
       error.value = `No Commonwealth Act defines "${t}".`;
+      track("search_no_result", { term: t });
       return;
     }
     if (!quickRes.ok) throw new Error(`HTTP ${quickRes.status}`);
     const quick: ComparisonResponse = await quickRes.json();
     result.value = quick;
     loading.value = false;
+    track("term_compared", { term: t, is_flagship: FLAGSHIP_TERMS.includes(t) });
 
     if (quick.definitions.length < 2) {
       stopDots();

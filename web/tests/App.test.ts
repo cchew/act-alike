@@ -372,5 +372,69 @@ describe("App", () => {
       document.querySelector(".driver-popover")?.remove();
       document.querySelector(".driver-overlay")?.remove();
     });
+
+    it("tracks term_compared with is_flagship=true for a flagship term", async () => {
+      const wrapper = mount(App);
+      await wrapper.get(".flagship-btn").trigger("click");
+      await flushPromises();
+      expect(track).toHaveBeenCalledWith("term_compared", { term: "personal information", is_flagship: true });
+    });
+
+    it("tracks term_compared with is_flagship=false for a typed non-flagship term", async () => {
+      vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+        if (url.includes("/terms")) return { ok: true, status: 200, json: async () => [] };
+        return { ok: true, status: 200, json: async () => ({ ...RESPONSE, term: "entity" }) };
+      }));
+      const wrapper = mount(App);
+      await wrapper.find(".search-input").setValue("entity");
+      await wrapper.find(".search-row").trigger("submit.prevent");
+      await flushPromises();
+      expect(track).toHaveBeenCalledWith("term_compared", { term: "entity", is_flagship: false });
+    });
+
+    it("tracks search_no_result on a 404", async () => {
+      vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 404, json: async () => ({}) })));
+      const wrapper = mount(App);
+      await wrapper.find(".search-input").setValue("not a real term");
+      await wrapper.find(".search-row").trigger("submit.prevent");
+      await flushPromises();
+      expect(track).toHaveBeenCalledWith("search_no_result", { term: "not a real term" });
+    });
+
+    it("tracks coverage_warning_shown when the coverage warning renders", async () => {
+      vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+        if (url.includes("/terms")) return { ok: true, status: 200, json: async () => [] };
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            term: "company",
+            definitions: [
+              {
+                display_term: "company",
+                definition_text: "subsection 995-1(1) of the Income Tax Assessment Act 1997.",
+                act_title: "Income Tax Assessment Act 1936",
+                act_frbr_uri: "/akn/au/act/1936/27",
+                section_eid: "part-I__sec-6",
+              },
+              {
+                display_term: "company",
+                definition_text: "any body or association (whether or not it is incorporated), but does not include a partnership.",
+                act_title: "Migration Act 1958",
+                act_frbr_uri: "/akn/au/act/1958/62",
+                section_eid: "part-5__dvs-1__sec-337",
+              },
+            ],
+            difference_summary: null,
+            differences: [],
+          }),
+        };
+      }));
+      const wrapper = mount(App);
+      await wrapper.find(".search-input").setValue("company");
+      await wrapper.find(".search-row").trigger("submit.prevent");
+      await flushPromises();
+      expect(track).toHaveBeenCalledWith("coverage_warning_shown", { term: "company" });
+    });
   });
 });
