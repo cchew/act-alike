@@ -467,4 +467,33 @@ describe("App", () => {
       window.history.pushState(null, "", "/");
     });
   });
+
+  describe("feedback widget", () => {
+    it("shows the feedback widget once a verified LLM summary with differences renders", async () => {
+      vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+        if (url.includes("/terms")) return { ok: true, status: 200, json: async () => [] };
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            ...RESPONSE,
+            difference_summary: "The Acts differ in scope.",
+            differences: [{ act_title: "Privacy Act 1988", quote: "an identified individual", note: "scope" }],
+          }),
+        };
+      }));
+      const wrapper = mount(App);
+      await wrapper.get(".flagship-btn").trigger("click");
+      await flushPromises();
+      expect(wrapper.find('[data-testid="feedback-widget"]').exists()).toBe(true);
+    });
+
+    it("does not show the feedback widget for a fallback (non-LLM) summary", async () => {
+      const wrapper = mount(App);
+      await wrapper.get(".flagship-btn").trigger("click");
+      await flushPromises();
+      // RESPONSE has difference_summary: null and no differences — the fallback-summary case.
+      expect(wrapper.find('[data-testid="feedback-widget"]').exists()).toBe(false);
+    });
+  });
 });

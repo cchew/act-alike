@@ -9,6 +9,7 @@ import DefinitionPanel from "./components/DefinitionPanel.vue";
 import TermBrowser from "./components/TermBrowser.vue";
 import CorpusStats from "./components/CorpusStats.vue";
 import AboutModal from "./components/AboutModal.vue";
+import FeedbackWidget from "./components/FeedbackWidget.vue";
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL as string) ?? "http://127.0.0.1:8000";
 const FLAGSHIP_TERMS = ["personal information", "Australian resident", "constitutional corporation", "civil penalty provision"];
@@ -221,6 +222,14 @@ async function search(t: string) {
 
           <template v-else-if="result">
             <p v-if="result.difference_summary" class="difference-summary">{{ result.difference_summary }}</p>
+            <FeedbackWidget
+              v-if="result.difference_summary && result.differences?.length"
+              :key="result.term"
+              :api-base="API_BASE"
+              :term="result.term"
+              :summary="result.difference_summary"
+              :differences="result.differences"
+            />
             <p v-else-if="summarising" class="loading summarising">Comparing {{ result.definitions.length }} Acts{{ dots }}</p>
 
             <p v-if="coverageWarning" class="coverage-warning">
