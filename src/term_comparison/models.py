@@ -1,6 +1,8 @@
 # src/term_comparison/models.py
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel
 
 
@@ -35,3 +37,10 @@ class MultiActTermOut(BaseModel):
     term: str
     display_term: str
     act_count: int
+
+
+class FeedbackIn(BaseModel):
+    term: str
+    vote: Literal["up", "down"]
+    summary: str | None = None
+    differences: list[DifferenceOut] = []

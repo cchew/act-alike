@@ -1,7 +1,11 @@
 # src/term_comparison/api.py
 from __future__ import annotations
 
+from datetime import datetime, timezone
+import json
+from pathlib import Path
 import re
+from typing import Callable
 
 import anthropic
 from fastapi import FastAPI, HTTPException
@@ -9,11 +13,13 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from lexaugraph.resolver import DefinitionResolver
 
+from term_comparison.cache import content_hash, load_cached, store_cached
 from term_comparison.llm import summarise_differences
 from term_comparison.models import (
     ComparisonResponse,
     DefinitionOut,
     DifferenceOut,
+    FeedbackIn,
     MultiActTermOut,
     StatsOut,
 )
@@ -52,7 +58,12 @@ def _fallback_summary(definitions: list[DefinitionOut]) -> str | None:
     return f"Definitions found in {act_count} Acts, but full text wasn't extracted for this term — see Known limitations."
 
 
-def create_app(resolver: DefinitionResolver, client: anthropic.Anthropic | None = None) -> FastAPI:
+def create_app(
+    resolver: DefinitionResolver,
+    client: anthropic.Anthropic | None = None,
+    cache_dir: Path | None = None,
+    cache_commit: Callable[[], None] | None = None,
+) -> FastAPI:
     app = FastAPI(title="term-comparison", version="0.1.0")
     app.add_middleware(
         CORSMiddleware,
@@ -89,14 +100,22 @@ def create_app(resolver: DefinitionResolver, client: anthropic.Anthropic | None 
     def get_definitions(term: str) -> ComparisonResponse:
         definitions = _resolve_definitions(term)
         diff_result = None
-        if client is not None:
-            try:
-                diff_result = summarise_differences(term, definitions, client)
-            except Exception:
-                # The LLM summary is an enhancement, not the product. A failure here
-                # (network error, SDK exception not subclassing anthropic.APIError,
-                # malformed response, etc.) must never break the core definitions result.
-                diff_result = None
+        if client is not None and len(definitions) >= 2:
+            current_hash = content_hash(definitions)
+            if cache_dir is not None:
+                diff_result = load_cached(cache_dir, term, current_hash)
+            if diff_result is None:
+                try:
+                    diff_result = summarise_differences(term, definitions, client)
+                except Exception:
+                    # The LLM summary is an enhancement, not the product. A failure here
+                    # (network error, SDK exception not subclassing anthropic.APIError,
+                    # malformed response, etc.) must never break the core definitions result.
+                    diff_result = None
+                if diff_result is not None and cache_dir is not None:
+                    store_cached(cache_dir, term, current_hash, diff_result)
+                    if cache_commit is not None:
+                        cache_commit()
         return ComparisonResponse(
             term=term,
             definitions=definitions,
@@ -107,6 +126,23 @@ def create_app(resolver: DefinitionResolver, client: anthropic.Anthropic | None 
                 else []
             ),
         )
+
+    @app.post("/feedback", status_code=204)
+    def post_feedback(feedback: FeedbackIn) -> None:
+        if cache_dir is None:
+            return
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        record = {
+            "term": feedback.term,
+            "vote": feedback.vote,
+            "summary": feedback.summary,
+            "differences": [d.model_dump() for d in feedback.differences],
+            "recorded_at": datetime.now(timezone.utc).isoformat(),
+        }
+        with (cache_dir / "feedback.jsonl").open("a") as f:
+            f.write(json.dumps(record) + "\n")
+        if cache_commit is not None:
+            cache_commit()
 
     @app.get("/stats", response_model=StatsOut)
     def get_stats() -> StatsOut:

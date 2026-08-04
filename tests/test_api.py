@@ -471,3 +471,94 @@ def test_get_definitions_returns_multiple_meanings_same_act():
     def_texts = {d["definition_text"] for d in data["definitions"]}
     assert "income derived from a source outside Australia by a resident." in def_texts
     assert "a pension, allowance or benefit specified in Schedule 5." in def_texts
+
+
+def test_get_definitions_caches_llm_summary_across_requests(tmp_path):
+    resolver = _build_test_resolver()
+    mock_response = MagicMock()
+    mock_response.content = [MagicMock(text=json.dumps({
+        "summary": "They differ in scope.",
+        "differences": [{
+            "act_title": "Social Security Act 1991",
+            "quote": "a social security benefit or a social security pension",
+            "note": "narrower",
+        }],
+    }))]
+    mock_client = MagicMock()
+    mock_client.messages.create.return_value = mock_response
+
+    app = create_app(resolver, client=mock_client, cache_dir=tmp_path)
+    client = TestClient(app)
+
+    r1 = client.get("/definitions", params={"term": "income support payment"})
+    assert r1.json()["difference_summary"] == "They differ in scope."
+    assert mock_client.messages.create.call_count == 1
+
+    r2 = client.get("/definitions", params={"term": "income support payment"})
+    assert r2.json()["difference_summary"] == "They differ in scope."
+    assert mock_client.messages.create.call_count == 1  # served from cache, not re-called
+
+    assert len(list(tmp_path.glob("*.json"))) == 1
+
+
+def test_get_definitions_calls_cache_commit_after_writing(tmp_path):
+    resolver = _build_test_resolver()
+    mock_response = MagicMock()
+    mock_response.content = [MagicMock(text=json.dumps({
+        "summary": "They differ in scope.",
+        "differences": [{
+            "act_title": "Social Security Act 1991",
+            "quote": "a social security benefit or a social security pension",
+            "note": "narrower",
+        }],
+    }))]
+    mock_client = MagicMock()
+    mock_client.messages.create.return_value = mock_response
+    commit_mock = MagicMock()
+
+    app = create_app(resolver, client=mock_client, cache_dir=tmp_path, cache_commit=commit_mock)
+    client = TestClient(app)
+    client.get("/definitions", params={"term": "income support payment"})
+
+    commit_mock.assert_called_once()
+
+
+def test_post_feedback_appends_jsonl_and_commits(tmp_path):
+    resolver = _build_test_resolver()
+    commit_mock = MagicMock()
+    app = create_app(resolver, cache_dir=tmp_path, cache_commit=commit_mock)
+    client = TestClient(app)
+
+    response = client.post("/feedback", json={
+        "term": "income support payment",
+        "vote": "up",
+        "summary": "They differ in scope.",
+        "differences": [{"act_title": "Social Security Act 1991", "quote": "x", "note": "y"}],
+    })
+
+    assert response.status_code == 204
+    feedback_file = tmp_path / "feedback.jsonl"
+    lines = feedback_file.read_text().strip().splitlines()
+    assert len(lines) == 1
+    record = json.loads(lines[0])
+    assert record["term"] == "income support payment"
+    assert record["vote"] == "up"
+    commit_mock.assert_called_once()
+
+
+def test_post_feedback_noop_without_cache_dir():
+    resolver = _build_test_resolver()
+    app = create_app(resolver)  # no cache_dir configured
+    client = TestClient(app)
+
+    response = client.post("/feedback", json={"term": "x", "vote": "down"})
+    assert response.status_code == 204
+
+
+def test_post_feedback_rejects_invalid_vote():
+    resolver = _build_test_resolver()
+    app = create_app(resolver)
+    client = TestClient(app)
+
+    response = client.post("/feedback", json={"term": "x", "vote": "sideways"})
+    assert response.status_code == 422
