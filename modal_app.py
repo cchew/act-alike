@@ -18,8 +18,17 @@ image = (
 
 app = modal.App("term-comparison", image=image)
 
+# Persists LLM-summary cache entries and feedback records (cache.py) across
+# container restarts/redeploys. Populated lazily by real requests — no
+# pre-warming or separate ingest step needed here.
+cache_volume = modal.Volume.from_name("term-comparison-cache", create_if_missing=True)
 
-@app.function(min_containers=1, secrets=[modal.Secret.from_name("anthropic-api-key")])
+
+@app.function(
+    min_containers=1,
+    secrets=[modal.Secret.from_name("anthropic-api-key")],
+    volumes={"/cache": cache_volume},
+)
 @modal.asgi_app(label="term-comparison-api")
 def fastapi_app():
     import os
@@ -32,4 +41,9 @@ def fastapi_app():
     graph = LexAuGraph.load(_Path("/root/graph.json"))
     resolver = DefinitionResolver(graph)
     client = anthropic.Anthropic() if os.environ.get("ANTHROPIC_API_KEY") else None
-    return create_app(resolver, client=client)
+    return create_app(
+        resolver,
+        client=client,
+        cache_dir=_Path("/cache"),
+        cache_commit=cache_volume.commit,
+    )
