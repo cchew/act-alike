@@ -2,12 +2,16 @@
 from __future__ import annotations
 from dataclasses import dataclass
 import json
+import logging
 import os
 import re
 
 import anthropic
 
 from term_comparison.models import DefinitionOut
+
+_LOGGER = logging.getLogger(__name__)
+_NUMBER_RE = re.compile(r"\d+")
 
 
 @dataclass
@@ -53,6 +57,24 @@ def verify_quote(quote: str, source_text: str) -> bool:
     """Check a quoted passage exists (whitespace/punctuation-insensitive) in source_text."""
     normalised_quote = _normalise(quote)
     return bool(normalised_quote) and normalised_quote in _normalise(source_text)
+
+
+def _summary_has_unverified_span(summary: str, differences: list[VerifiedDifference]) -> bool:
+    """True if `summary` asserts a number that no verified difference's quote supports.
+
+    `summary` is a free-text synthesis of `differences` and is never itself
+    quote-verified the way each `differences[].quote` is — this is a cheap,
+    number-focused check for that gap (FUTURE.md "Summary-field grounding
+    gap"). It does not prove `summary` is fully grounded, only that it hasn't
+    invented a figure (age, dollar amount, date) absent from every verified quote.
+    """
+    summary_numbers = set(_NUMBER_RE.findall(summary))
+    if not summary_numbers:
+        return False
+    quoted_numbers: set[str] = set()
+    for d in differences:
+        quoted_numbers.update(_NUMBER_RE.findall(d.quote))
+    return not summary_numbers.issubset(quoted_numbers)
 
 
 def _default_model() -> str:
@@ -138,5 +160,10 @@ def summarise_differences(
     summary = data.get("summary")
     if not summary:
         return None
+
+    if _summary_has_unverified_span(summary, verified):
+        _LOGGER.warning(
+            "unverified numeric span in summary for term=%r: %r", term, summary
+        )
 
     return DifferenceSummary(summary=summary, differences=verified)

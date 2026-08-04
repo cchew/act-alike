@@ -147,3 +147,42 @@ def test_summarise_differences_only_includes_verified_differences_in_list():
     assert result is not None
     assert len(result.differences) == 1
     assert result.differences[0].act_title == "Privacy Act 1988"
+
+
+from term_comparison.llm import _summary_has_unverified_span, VerifiedDifference
+
+
+def test_summary_has_unverified_span_false_when_no_numbers():
+    diffs = [VerifiedDifference(act_title="Privacy Act 1988", quote="an identified individual", note="scope")]
+    assert _summary_has_unverified_span("The Acts differ in scope.", diffs) is False
+
+
+def test_summary_has_unverified_span_false_when_number_is_quoted():
+    diffs = [VerifiedDifference(act_title="ITAA 1936", quote="under 18 years of age", note="threshold")]
+    assert _summary_has_unverified_span("One Act sets the threshold at 18.", diffs) is False
+
+
+def test_summary_has_unverified_span_true_when_number_is_not_quoted():
+    diffs = [VerifiedDifference(act_title="ITAA 1936", quote="under 18 years of age", note="threshold")]
+    assert _summary_has_unverified_span("One Act sets the threshold at 21.", diffs) is True
+
+
+def test_summarise_differences_logs_warning_on_unverified_span(caplog):
+    definitions = [DEF_A, DEF_B]
+    mock_client = MagicMock()
+    mock_response = MagicMock()
+    mock_response.content = [MagicMock(text=json.dumps({
+        "summary": "One Act sets the age threshold at 99.",
+        "differences": [{
+            "act_title": DEF_A.act_title,
+            "quote": "information about an identified individual",
+            "note": "narrower",
+        }],
+    }))]
+    mock_client.messages.create.return_value = mock_response
+
+    with caplog.at_level("WARNING"):
+        result = summarise_differences("personal information", definitions, mock_client)
+
+    assert result is not None  # flagging logs a warning, it does not suppress the summary
+    assert "unverified" in caplog.text.lower()
