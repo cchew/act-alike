@@ -5,6 +5,7 @@ import { findQuoteSpan } from "../highlight";
 import { legislationSearchUrl } from "../citation";
 import { formatSectionCitation } from "../citation-format";
 import { detectCrossReference, crossReferenceDetail } from "../crossref";
+import { track } from "../analytics";
 
 const props = withDefaults(
   defineProps<{ definitions: DefinitionOut[]; differences?: DifferenceOut[] }>(),
@@ -68,6 +69,10 @@ function crossReferenceDetailFor(d: DefinitionOut): string | null {
   if (!referencedAct) return null;
   return crossReferenceDetail(d.definition_text, referencedAct);
 }
+
+function onCitationClick(actTitle: string): void {
+  track("citation_clicked", { act_title: actTitle });
+}
 </script>
 
 <template>
@@ -84,6 +89,7 @@ function crossReferenceDetailFor(d: DefinitionOut): string | null {
         :href="legislationSearchUrl(d.act_title)"
         target="_blank"
         rel="noopener noreferrer"
+        @click="onCitationClick(d.act_title)"
       >View on legislation.gov.au</a>
       <template v-if="crossReferenceFor(d)">
         <p class="cross-ref-note">Adopts the definition from {{ crossReferenceFor(d) }}</p>

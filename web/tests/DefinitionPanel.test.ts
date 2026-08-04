@@ -1,8 +1,11 @@
 // tests/DefinitionPanel.test.ts
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import DefinitionPanel from "../src/components/DefinitionPanel.vue";
 import type { DefinitionOut, DifferenceOut } from "../src/types";
+
+vi.mock("../src/analytics", () => ({ track: vi.fn() }));
+import { track } from "../src/analytics";
 
 const DEFS: DefinitionOut[] = [
   {
@@ -183,5 +186,22 @@ describe("DefinitionPanel", () => {
       // Unrelated card, keeps its own relative position.
       "National Disability Insurance Scheme Act 2013 · s 3",
     ]);
+  });
+
+  it("tracks citation_clicked with the act title when the citation link is clicked", async () => {
+    (track as ReturnType<typeof vi.fn>).mockClear();
+    const wrapper = mount(DefinitionPanel, {
+      props: {
+        definitions: [{
+          display_term: "personal information",
+          definition_text: "means information about an identified individual.",
+          act_title: "Privacy Act 1988",
+          act_frbr_uri: "/akn/au/act/1988/119",
+          section_eid: "sec-6",
+        }],
+      },
+    });
+    await wrapper.find(".citation-link").trigger("click");
+    expect(track).toHaveBeenCalledWith("citation_clicked", { act_title: "Privacy Act 1988" });
   });
 });
