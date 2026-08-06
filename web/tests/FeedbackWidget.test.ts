@@ -19,7 +19,7 @@ describe("FeedbackWidget", () => {
   };
 
   it("posts to /feedback and tracks feedback_given on thumbs up", async () => {
-    const fetchMock = vi.fn(async () => ({ ok: true, status: 204 }));
+    const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) => ({ ok: true, status: 204 }));
     vi.stubGlobal("fetch", fetchMock);
 
     const wrapper = mount(FeedbackWidget, { props });
@@ -30,7 +30,7 @@ describe("FeedbackWidget", () => {
       "http://api.test/feedback",
       expect.objectContaining({ method: "POST" })
     );
-    const body = JSON.parse(fetchMock.mock.calls[0]![1].body as string);
+    const body = JSON.parse(fetchMock.mock.calls[0]![1]!.body as string);
     expect(body).toEqual({
       term: "personal information",
       vote: "up",
