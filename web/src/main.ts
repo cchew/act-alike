@@ -6,7 +6,7 @@ const umamiWebsiteId = import.meta.env.VITE_UMAMI_WEBSITE_ID as string | undefin
 if (umamiWebsiteId) {
   const script = document.createElement("script");
   script.defer = true;
-  script.src = "https://cloud.umami.is/script.js";
+  script.src = "https://umami-indol-one.vercel.app/script.js";
   script.setAttribute("data-website-id", umamiWebsiteId);
   document.head.appendChild(script);
 }
