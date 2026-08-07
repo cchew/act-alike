@@ -5,6 +5,7 @@ import { detectCrossReference } from "./crossref";
 import { startTour, hasSeenTour } from "./tour";
 import { track } from "./analytics";
 import { termToPath, termFromPath } from "./permalink";
+import { APP_VERSION } from "./version";
 import DefinitionPanel from "./components/DefinitionPanel.vue";
 import TermBrowser from "./components/TermBrowser.vue";
 import CorpusStats from "./components/CorpusStats.vue";
@@ -262,7 +263,10 @@ async function search(t: string) {
         </div>
       </aside>
     </div>
-    <footer class="disclaimer" ref="footerEl">Not an official government service. AI-generated summaries may be inaccurate — always verify against the cited legislation.</footer>
+    <footer class="disclaimer" ref="footerEl">
+      <span>Not an official government service. AI-generated summaries may be inaccurate — always verify against the cited legislation.</span>
+      <span class="app-version">v{{ APP_VERSION }}</span>
+    </footer>
     <AboutModal :open="aboutOpen" @close="aboutOpen = false" />
   </div>
 </template>
@@ -498,6 +502,11 @@ async function search(t: string) {
 .disclaimer {
   position: sticky;
   bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--s-2) var(--s-4);
   margin-top: var(--s-5);
   padding: var(--s-4) var(--s-5);
   margin-left: calc(var(--s-5) * -1);
@@ -506,6 +515,13 @@ async function search(t: string) {
   background: var(--color-bg);
   font-size: 0.75rem;
   color: var(--color-ink-3);
+}
+
+.app-version {
+  flex-shrink: 0;
+  color: var(--color-ink-3);
+  opacity: 0.7;
+  white-space: nowrap;
 }
 
 .title-row {

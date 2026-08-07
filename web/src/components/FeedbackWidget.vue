@@ -69,6 +69,7 @@ async function vote(choice: "up" | "down"): Promise<void> {
   align-items: center;
   gap: var(--s-2);
   margin-top: var(--s-2);
+  margin-bottom: var(--s-4);
   font-size: 0.75rem;
   color: var(--color-ink-3);
 }

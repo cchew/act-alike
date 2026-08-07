@@ -64,7 +64,7 @@ def create_app(
     cache_dir: Path | None = None,
     cache_commit: Callable[[], None] | None = None,
 ) -> FastAPI:
-    app = FastAPI(title="term-comparison", version="0.1.0")
+    app = FastAPI(title="term-comparison", version="0.2.0")
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
