@@ -25,6 +25,7 @@ class ComparisonResponse(BaseModel):
     definitions: list[DefinitionOut]
     difference_summary: str | None = None
     differences: list[DifferenceOut] = []
+    summary_unverified: bool = False
 
 
 class StatsOut(BaseModel):
@@ -36,6 +37,12 @@ class StatsOut(BaseModel):
 class MultiActTermOut(BaseModel):
     term: str
     display_term: str
+    act_count: int
+
+
+class DivergentTermOut(BaseModel):
+    term: str
+    difference_count: int
     act_count: int
 
 

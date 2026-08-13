@@ -154,6 +154,49 @@ test.describe("Term comparison — browse list", () => {
   });
 });
 
+test.describe("Divergent terms", () => {
+  // Unlike the rest of this file, this describe does NOT require the live
+  // backend — every API call the page makes is mocked via page.route, so it
+  // runs standalone (no `term-comparison serve` needed) and incurs no LLM
+  // cost. The mocked /definitions/quick response deliberately has only one
+  // Act so search()'s "fewer than 2 definitions" short-circuit means the
+  // paid /definitions (full-summary) endpoint is never called at all.
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("act-alike-tour-seen", "1"));
+    await page.route("**/stats", (route) =>
+      route.fulfill({ json: { acts: 1, defined_terms: 1, multi_act_terms: 0 } }));
+    await page.route("**/terms", (route) => route.fulfill({ json: [] }));
+    await page.route("**/terms/divergent", (route) =>
+      route.fulfill({ json: [{ term: "personal information", difference_count: 2, act_count: 2 }] }));
+    await page.route("**/definitions/quick*", (route) =>
+      route.fulfill({
+        json: {
+          term: "personal information",
+          definitions: [{
+            display_term: "personal information",
+            definition_text: "personal information means information about an identified individual.",
+            act_title: "Privacy Act 1988",
+            act_frbr_uri: "/akn/au/act/1988/119",
+            section_eid: "sec-6",
+          }],
+          difference_summary: null,
+          differences: [],
+          summary_unverified: false,
+        },
+      }));
+  });
+
+  test("clicking a divergent term reuses the search flow and renders its definitions", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator(".divergent-terms")).toContainText("Most divergent terms");
+
+    await page.locator(".divergent-term-btn", { hasText: "personal information" }).click();
+
+    await expect(page.locator(".definition-card")).toContainText("Privacy Act 1988");
+    await expect(page).toHaveURL(/\/term\/personal/);
+  });
+});
+
 test.describe("Browse panel height", () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem("act-alike-tour-seen", "1"));

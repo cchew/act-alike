@@ -186,3 +186,41 @@ def test_summarise_differences_logs_warning_on_unverified_span(caplog):
 
     assert result is not None  # flagging logs a warning, it does not suppress the summary
     assert "unverified" in caplog.text.lower()
+
+
+def test_summarise_differences_sets_has_unverified_span_true_when_number_unquoted():
+    mock_response = MagicMock()
+    mock_response.content = [MagicMock(text=json.dumps({
+        "summary": "One Act sets the age threshold at 99.",
+        "differences": [{
+            "act_title": DEF_A.act_title,
+            "quote": "information about an identified individual",
+            "note": "narrower",
+        }],
+    }))]
+    mock_client = MagicMock()
+    mock_client.messages.create.return_value = mock_response
+
+    result = summarise_differences("personal information", [DEF_A, DEF_B], mock_client)
+
+    assert result is not None
+    assert result.has_unverified_span is True
+
+
+def test_summarise_differences_sets_has_unverified_span_false_when_grounded():
+    mock_response = MagicMock()
+    mock_response.content = [MagicMock(text=json.dumps({
+        "summary": "One Act limits personal information to information, the other extends it to information or an opinion.",
+        "differences": [{
+            "act_title": DEF_A.act_title,
+            "quote": "information about an identified individual",
+            "note": "narrower",
+        }],
+    }))]
+    mock_client = MagicMock()
+    mock_client.messages.create.return_value = mock_response
+
+    result = summarise_differences("personal information", [DEF_A, DEF_B], mock_client)
+
+    assert result is not None
+    assert result.has_unverified_span is False

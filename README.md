@@ -83,6 +83,7 @@ term-comparison serve
 
 ## Versions
 
+- **v0.2.1** - Backlog round: grounding-flag caveat badge surfaced in the UI (was backend-log-only), "most divergent terms" sidebar list ranked by verified-difference/Act ratio, term-browser-toggle analytics event.
 - **v0.2.0** - Growth features: lazy per-term LLM summary cache, Umami analytics (tour, search, citation clicks, feedback), shareable per-term permalinks, thumbs up/down feedback widget, footer version display. Reframed IM2026 as the project's origin, not its primary purpose.
 - **v0.1.4** - IM2026 competition submission. Review fixes on the polish pass: stable-height corpus stats placeholder (fixes guided-tour first-highlight misalignment), "Legend:" label, browse panel no longer overflows the viewport with no search results.
 - **v0.1.3** - Polish pass: guided first-visit tour, progressive quick/full results split, corpus-coverage warning banner, panel-style legend, sticky footer, build-pipeline diagram, GitHub repo link.

@@ -8,6 +8,7 @@ import { termToPath, termFromPath } from "./permalink";
 import { APP_VERSION } from "./version";
 import DefinitionPanel from "./components/DefinitionPanel.vue";
 import TermBrowser from "./components/TermBrowser.vue";
+import DivergentTerms from "./components/DivergentTerms.vue";
 import CorpusStats from "./components/CorpusStats.vue";
 import AboutModal from "./components/AboutModal.vue";
 import FeedbackWidget from "./components/FeedbackWidget.vue";
@@ -56,6 +57,16 @@ function launchTour(source: "auto" | "manual"): void {
 function openAbout(): void {
   aboutOpen.value = true;
   track("about_opened");
+}
+
+function toggleTermBrowser(): void {
+  browserExpanded.value = !browserExpanded.value;
+  track("term_browser_toggled", { expanded: browserExpanded.value });
+}
+
+function searchDivergentTerm(t: string): void {
+  track("divergent_term_clicked", { term: t });
+  search(t);
 }
 
 onMounted(() => {
@@ -172,7 +183,12 @@ async function search(t: string) {
     const fullRes = await fetch(`${API_BASE}/definitions?term=${encodeURIComponent(t)}`);
     if (fullRes.ok && quick.term === t) {
       const full: ComparisonResponse = await fullRes.json();
-      result.value = { ...quick, difference_summary: full.difference_summary, differences: full.differences };
+      result.value = {
+        ...quick,
+        difference_summary: full.difference_summary,
+        differences: full.differences,
+        summary_unverified: full.summary_unverified,
+      };
     }
   } catch (e) {
     error.value = e instanceof Error ? e.message : "Search failed";
@@ -222,7 +238,15 @@ async function search(t: string) {
           <p v-else-if="error" class="load-error">{{ error }}</p>
 
           <template v-else-if="result">
-            <p v-if="result.difference_summary" class="difference-summary">{{ result.difference_summary }}</p>
+            <p v-if="result.difference_summary" class="difference-summary">
+              {{ result.difference_summary }}
+              <span
+                v-if="result.summary_unverified"
+                class="summary-caveat"
+                title="This summary may reference a figure not directly quoted from the source Acts below — verify against the citations."
+                aria-label="Caveat: this summary may reference a figure not directly quoted from the source Acts below. Verify against the citations."
+              ><span class="warning-icon" aria-hidden="true">&#9888;</span> Unverified figure</span>
+            </p>
             <FeedbackWidget
               v-if="result.difference_summary && result.differences?.length"
               :key="result.term"
@@ -251,12 +275,13 @@ async function search(t: string) {
       </div>
 
       <aside class="browser-aside" aria-label="Browse defined terms">
+        <DivergentTerms @select="searchDivergentTerm" />
         <button
           type="button"
           class="term-browser-toggle"
           :aria-expanded="browserExpanded"
           aria-controls="term-browser-panel"
-          @click="browserExpanded = !browserExpanded"
+          @click="toggleTermBrowser"
         >{{ browserExpanded ? 'Hide' : 'Browse' }} defined terms</button>
         <div id="term-browser-panel" class="term-browser-panel" v-show="browserExpanded">
           <TermBrowser @select="search" />
@@ -451,6 +476,20 @@ async function search(t: string) {
 }
 
 .warning-icon { flex-shrink: 0; }
+
+.summary-caveat {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  margin-left: var(--s-2);
+  padding: 1px var(--s-2);
+  background: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.6875rem;
+  color: var(--color-warning-text);
+  cursor: help;
+}
 
 .results-legend {
   display: flex;

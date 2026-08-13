@@ -11,6 +11,8 @@ from lexaugraph.models import ActData, ActNode, DefinedTermNode, SectionNode
 from lexaugraph.resolver import DefinitionResolver
 
 from term_comparison.api import create_app
+from term_comparison.cache import store_cached
+from term_comparison.llm import DifferenceSummary, VerifiedDifference
 
 
 def _build_test_resolver() -> DefinitionResolver:
@@ -235,6 +237,64 @@ def test_get_definitions_populates_difference_summary_with_client():
     assert data["difference_summary"] == "The Acts describe the same payment concept in different words."
 
 
+def test_get_definitions_summary_unverified_true_when_span_ungrounded():
+    resolver = _build_test_resolver()
+    mock_response = MagicMock()
+    mock_response.content = [MagicMock(text=json.dumps({
+        "summary": "One Act sets a 99-day waiting period.",
+        "differences": [
+            {
+                "act_title": "Social Security Act 1991",
+                "quote": "a social security benefit or a social security pension",
+                "note": "defines the concept directly",
+            },
+        ],
+    }))]
+    mock_client = MagicMock()
+    mock_client.messages.create.return_value = mock_response
+
+    app = create_app(resolver, client=mock_client)
+    client = TestClient(app)
+
+    response = client.get("/definitions", params={"term": "income support payment"})
+
+    assert response.json()["summary_unverified"] is True
+
+
+def test_get_definitions_summary_unverified_false_when_grounded():
+    resolver = _build_test_resolver()
+    mock_response = MagicMock()
+    mock_response.content = [MagicMock(text=json.dumps({
+        "summary": "The Acts describe the same payment concept in different words.",
+        "differences": [
+            {
+                "act_title": "Social Security Act 1991",
+                "quote": "a social security benefit or a social security pension",
+                "note": "defines the concept directly",
+            },
+        ],
+    }))]
+    mock_client = MagicMock()
+    mock_client.messages.create.return_value = mock_response
+
+    app = create_app(resolver, client=mock_client)
+    client = TestClient(app)
+
+    response = client.get("/definitions", params={"term": "income support payment"})
+
+    assert response.json()["summary_unverified"] is False
+
+
+def test_get_definitions_summary_unverified_false_without_client():
+    resolver = _build_test_resolver()
+    app = create_app(resolver)  # no client configured — fallback summary path
+    client = TestClient(app)
+
+    response = client.get("/definitions", params={"term": "income support payment"})
+
+    assert response.json()["summary_unverified"] is False
+
+
 def test_get_definitions_fallback_summary_without_client():
     resolver = _build_test_resolver()
     app = create_app(resolver)  # no client configured
@@ -350,6 +410,63 @@ def test_get_terms_default_min_acts_excludes_two_act_term():
     client = TestClient(app)
 
     response = client.get("/terms")
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_get_terms_divergent_ranks_by_difference_act_ratio(tmp_path):
+    resolver = _build_test_resolver()
+    store_cached(
+        tmp_path, "child", "h1",
+        DifferenceSummary(summary="s", differences=[
+            VerifiedDifference(act_title="A", quote="q", note="n"),
+            VerifiedDifference(act_title="B", quote="q", note="n"),
+        ]),
+        act_count=2,
+    )
+    store_cached(
+        tmp_path, "quarter", "h2",
+        DifferenceSummary(summary="s", differences=[
+            VerifiedDifference(act_title="A", quote="q", note="n"),
+        ]),
+        act_count=6,
+    )
+
+    app = create_app(resolver, cache_dir=tmp_path)
+    client = TestClient(app)
+
+    response = client.get("/terms/divergent")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert [d["term"] for d in data] == ["child", "quarter"]
+    assert data[0] == {"term": "child", "difference_count": 2, "act_count": 2}
+
+
+def test_get_terms_divergent_respects_limit(tmp_path):
+    resolver = _build_test_resolver()
+    for i in range(3):
+        store_cached(
+            tmp_path, f"term-{i}", f"h{i}",
+            DifferenceSummary(summary="s", differences=[VerifiedDifference(act_title="A", quote="q", note="n")]),
+            act_count=1,
+        )
+
+    app = create_app(resolver, cache_dir=tmp_path)
+    client = TestClient(app)
+
+    response = client.get("/terms/divergent", params={"limit": 2})
+
+    assert len(response.json()) == 2
+
+
+def test_get_terms_divergent_empty_without_cache_dir():
+    resolver = _build_test_resolver()
+    app = create_app(resolver)  # no cache_dir configured
+    client = TestClient(app)
+
+    response = client.get("/terms/divergent")
 
     assert response.status_code == 200
     assert response.json() == []

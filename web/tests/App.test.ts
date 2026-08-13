@@ -70,6 +70,44 @@ describe("App", () => {
     expect(wrapper.text()).toContain("The Acts differ in scope.");
   });
 
+  it("shows the unverified-summary caveat badge once the full response flags it", async () => {
+    const twoActResponse = {
+      ...RESPONSE,
+      definitions: [...RESPONSE.definitions, { ...RESPONSE.definitions[0], act_title: "Crimes Act 1914" }],
+    };
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url.includes("/terms")) return { ok: true, status: 200, json: async () => [] };
+      if (url.includes("/definitions/quick")) {
+        return { ok: true, status: 200, json: async () => ({ ...twoActResponse, difference_summary: null, summary_unverified: false }) };
+      }
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ ...twoActResponse, difference_summary: "One Act sets a 99-day waiting period.", summary_unverified: true }),
+      };
+    }));
+    const wrapper = mount(App);
+    await wrapper.get(".flagship-btn").trigger("click");
+    await flushPromises();
+    expect(wrapper.find(".summary-caveat").exists()).toBe(true);
+  });
+
+  it("does not show the caveat badge when the backend does not flag the summary", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        ...RESPONSE,
+        difference_summary: "The Acts differ in scope.",
+        summary_unverified: false,
+      }),
+    })));
+    const wrapper = mount(App);
+    await wrapper.get(".flagship-btn").trigger("click");
+    await flushPromises();
+    expect(wrapper.find(".summary-caveat").exists()).toBe(false);
+  });
+
   it("renders the term browser and searching a browsed term reuses the same search flow", async () => {
     vi.stubGlobal("fetch", vi.fn(async (url: string) => {
       if (url.includes("/terms")) {
@@ -89,6 +127,29 @@ describe("App", () => {
     await flushPromises();
 
     expect(wrapper.text()).toContain("Privacy Act 1988");
+  });
+
+  it("renders divergent terms and clicking one reuses the search flow, tracking the click", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url.includes("/terms/divergent")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => [{ term: "personal information", difference_count: 2, act_count: 2 }],
+        };
+      }
+      if (url.includes("/terms")) return { ok: true, status: 200, json: async () => [] };
+      return { ok: true, status: 200, json: async () => RESPONSE };
+    }));
+    const wrapper = mount(App);
+    await flushPromises();
+    expect(wrapper.text()).toContain("Most divergent terms");
+
+    await wrapper.get(".divergent-term-btn").trigger("click");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Privacy Act 1988");
+    expect(track).toHaveBeenCalledWith("divergent_term_clicked", { term: "personal information" });
   });
 
   it("passes the differences from the response through to DefinitionPanel", async () => {
@@ -145,6 +206,17 @@ describe("App", () => {
 
     expect(wrapper.find("#term-browser-panel").isVisible()).toBe(true);
     expect(wrapper.find(".term-browser-toggle").attributes("aria-expanded")).toBe("true");
+    wrapper.unmount();
+  });
+
+  it("tracks term_browser_toggled with the new expanded state on each click", async () => {
+    const wrapper = mount(App, { attachTo: document.body });
+
+    await wrapper.get(".term-browser-toggle").trigger("click");
+    expect(track).toHaveBeenCalledWith("term_browser_toggled", { expanded: true });
+
+    await wrapper.get(".term-browser-toggle").trigger("click");
+    expect(track).toHaveBeenCalledWith("term_browser_toggled", { expanded: false });
     wrapper.unmount();
   });
 

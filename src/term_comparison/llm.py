@@ -25,6 +25,7 @@ class VerifiedDifference:
 class DifferenceSummary:
     summary: str
     differences: list[VerifiedDifference]  # only the ones that verified
+    has_unverified_span: bool = False
 
 _SYSTEM_PROMPT = (
     "You are assisting a legislative research tool that compares how a legal term is "
@@ -161,9 +162,10 @@ def summarise_differences(
     if not summary:
         return None
 
-    if _summary_has_unverified_span(summary, verified):
+    unverified_span = _summary_has_unverified_span(summary, verified)
+    if unverified_span:
         _LOGGER.warning(
             "unverified numeric span in summary for term=%r: %r", term, summary
         )
 
-    return DifferenceSummary(summary=summary, differences=verified)
+    return DifferenceSummary(summary=summary, differences=verified, has_unverified_span=unverified_span)

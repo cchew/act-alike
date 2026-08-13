@@ -13,12 +13,13 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from lexaugraph.resolver import DefinitionResolver
 
-from term_comparison.cache import content_hash, load_cached, store_cached
+from term_comparison.cache import content_hash, list_cached, load_cached, store_cached
 from term_comparison.llm import summarise_differences
 from term_comparison.models import (
     ComparisonResponse,
     DefinitionOut,
     DifferenceOut,
+    DivergentTermOut,
     FeedbackIn,
     MultiActTermOut,
     StatsOut,
@@ -64,7 +65,7 @@ def create_app(
     cache_dir: Path | None = None,
     cache_commit: Callable[[], None] | None = None,
 ) -> FastAPI:
-    app = FastAPI(title="term-comparison", version="0.2.0")
+    app = FastAPI(title="term-comparison", version="0.2.1")
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
@@ -113,7 +114,7 @@ def create_app(
                     # malformed response, etc.) must never break the core definitions result.
                     diff_result = None
                 if diff_result is not None and cache_dir is not None:
-                    store_cached(cache_dir, term, current_hash, diff_result)
+                    store_cached(cache_dir, term, current_hash, diff_result, act_count=len(definitions))
                     if cache_commit is not None:
                         cache_commit()
         return ComparisonResponse(
@@ -125,6 +126,7 @@ def create_app(
                 if diff_result
                 else []
             ),
+            summary_unverified=diff_result.has_unverified_span if diff_result else False,
         )
 
     @app.post("/feedback", status_code=204)
@@ -158,5 +160,11 @@ def create_app(
             MultiActTermOut(term=t.term, display_term=t.display_term, act_count=t.act_count)
             for t in resolver.list_multi_act_terms(min_acts=min_acts)
         ]
+
+    @app.get("/terms/divergent", response_model=list[DivergentTermOut])
+    def get_terms_divergent(limit: int = 5) -> list[DivergentTermOut]:
+        if cache_dir is None:
+            return []
+        return [DivergentTermOut(**entry) for entry in list_cached(cache_dir)[:limit]]
 
     return app

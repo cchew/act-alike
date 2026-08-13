@@ -18,11 +18,18 @@ export interface ComparisonResponse {
   definitions: DefinitionOut[];
   difference_summary: string | null;
   differences: DifferenceOut[];
+  summary_unverified: boolean;
 }
 
 export interface MultiActTerm {
   term: string;
   display_term: string;
+  act_count: number;
+}
+
+export interface DivergentTerm {
+  term: string;
+  difference_count: number;
   act_count: number;
 }
 
