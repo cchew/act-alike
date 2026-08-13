@@ -24,6 +24,14 @@ describe("DivergentTerms", () => {
     expect(buttons[1]!.text()).toContain("quarter");
   });
 
+  it("renders a subtitle explaining the ranking", async () => {
+    const wrapper = mount(DivergentTerms);
+    await flushPromises();
+    expect(wrapper.find(".divergent-terms-subtitle").text()).toBe(
+      "Ranked by verified differences per Act compared."
+    );
+  });
+
   it("emits select with the term when a button is clicked", async () => {
     const wrapper = mount(DivergentTerms);
     await flushPromises();

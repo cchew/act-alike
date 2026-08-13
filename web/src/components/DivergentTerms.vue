@@ -23,6 +23,7 @@ onMounted(async () => {
 <template>
   <section v-if="terms.length" class="divergent-terms" aria-label="Most divergent terms">
     <h2 class="divergent-terms-heading">Most divergent terms</h2>
+    <p class="divergent-terms-subtitle">Ranked by verified differences per Act compared.</p>
     <div class="divergent-term-chips">
       <button
         v-for="t in terms"
@@ -46,6 +47,12 @@ onMounted(async () => {
   color: var(--color-ink-3);
   text-transform: uppercase;
   letter-spacing: 0.02em;
+  margin-bottom: var(--s-2);
+}
+
+.divergent-terms-subtitle {
+  font-size: 0.75rem;
+  color: var(--color-ink-3);
   margin-bottom: var(--s-2);
 }
 
