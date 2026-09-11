@@ -10,9 +10,9 @@ from lexaugraph.graph import LexAuGraph
 from lexaugraph.models import ActData, ActNode, DefinedTermNode, SectionNode
 from lexaugraph.resolver import DefinitionResolver
 
-from term_comparison.api import create_app
-from term_comparison.cache import store_cached
-from term_comparison.llm import DifferenceSummary, VerifiedDifference
+from act_alike.api import create_app
+from act_alike.cache import store_cached
+from act_alike.llm import DifferenceSummary, VerifiedDifference
 
 
 def _build_test_resolver() -> DefinitionResolver:
@@ -490,10 +490,10 @@ def test_fallback_summary_no_longer_fires_for_completed_definitions():
     lead-in), _fallback_summary must return the normal distinct-count message,
     not the 'wasn't extracted' fallback. _is_bare_fragment's regex only matches
     the exact bare fragment shape ("the following:" / "any of the following:"),
-    so this is a pure-function test proving no term-comparison code change is
+    so this is a pure-function test proving no act-alike code change is
     needed once the upstream corpus fix lands -- no live corpus/graph needed."""
-    from term_comparison.api import _fallback_summary
-    from term_comparison.models import DefinitionOut
+    from act_alike.api import _fallback_summary
+    from act_alike.models import DefinitionOut
 
     definitions = [
         DefinitionOut(

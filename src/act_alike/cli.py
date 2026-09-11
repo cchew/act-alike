@@ -1,4 +1,4 @@
-# src/term_comparison/cli.py
+# src/act_alike/cli.py
 from __future__ import annotations
 from pathlib import Path
 
@@ -8,7 +8,7 @@ def _default_graph() -> Path:
     """Locate lex-au-graph's graph.json as a sibling checkout.
 
     Tries the flat clone layout documented in the README first
-    (term-comparison/, lex-au-graph/ as plain siblings), then falls back
+    (act-alike/, lex-au-graph/ as plain siblings), then falls back
     to a nested repo/ layout (e.g. projects/<name>/repo/) if that's what's
     actually on disk. Returns the flat-layout path if neither exists yet,
     so --help still shows a sensible default before graph.json is built.
@@ -42,7 +42,7 @@ def cli() -> None:
 @click.option("--port", default=8000, show_default=True)
 @click.option("--host", default="127.0.0.1", show_default=True)
 def serve(graph: Path, port: int, host: str) -> None:
-    """Run the term-comparison FastAPI server locally.
+    """Run the act-alike FastAPI server locally.
 
     If ANTHROPIC_API_KEY is set in the environment, the /definitions response
     includes a quote-verified difference summary; otherwise difference_summary
@@ -53,7 +53,7 @@ def serve(graph: Path, port: int, host: str) -> None:
     import anthropic
     from lexaugraph.graph import LexAuGraph
     from lexaugraph.resolver import DefinitionResolver
-    from term_comparison.api import create_app
+    from act_alike.api import create_app
 
     g = LexAuGraph.load(graph)
     resolver = DefinitionResolver(g)

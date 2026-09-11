@@ -4,8 +4,8 @@ from __future__ import annotations
 import json
 from unittest.mock import MagicMock
 
-from term_comparison.models import DefinitionOut
-from term_comparison.llm import summarise_differences, verify_quote
+from act_alike.models import DefinitionOut
+from act_alike.llm import summarise_differences, verify_quote
 
 DEF_A = DefinitionOut(
     display_term="personal information",
@@ -149,7 +149,7 @@ def test_summarise_differences_only_includes_verified_differences_in_list():
     assert result.differences[0].act_title == "Privacy Act 1988"
 
 
-from term_comparison.llm import _summary_has_unverified_span, VerifiedDifference
+from act_alike.llm import _summary_has_unverified_span, VerifiedDifference
 
 
 def test_summary_has_unverified_span_false_when_no_numbers():

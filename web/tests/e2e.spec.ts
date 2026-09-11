@@ -3,7 +3,7 @@
 // Precondition: the FastAPI backend must be started manually before running this
 // suite — Playwright's `webServer` config (playwright.config.ts) only manages the
 // frontend dev server, not the backend. Start it in a separate terminal first:
-//   source .venv/bin/activate && export $(grep ANTHROPIC_API_KEY .env) && term-comparison serve
+//   source .venv/bin/activate && export $(grep ANTHROPIC_API_KEY .env) && act-alike serve
 // ANTHROPIC_API_KEY must be exported so the difference-summary test below gets a
 // real, non-null summary back from the LLM layer.
 import { test, expect } from "@playwright/test";
@@ -157,7 +157,7 @@ test.describe("Term comparison — browse list", () => {
 test.describe("Divergent terms", () => {
   // Unlike the rest of this file, this describe does NOT require the live
   // backend — every API call the page makes is mocked via page.route, so it
-  // runs standalone (no `term-comparison serve` needed) and incurs no LLM
+  // runs standalone (no `act-alike serve` needed) and incurs no LLM
   // cost. The mocked /definitions/quick response deliberately has only one
   // Act so search()'s "fewer than 2 definitions" short-circuit means the
   // paid /definitions (full-summary) endpoint is never called at all.

@@ -1,4 +1,4 @@
-# src/term_comparison/models.py
+# src/act_alike/models.py
 from __future__ import annotations
 
 from typing import Literal

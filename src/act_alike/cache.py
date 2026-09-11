@@ -1,4 +1,4 @@
-# src/term_comparison/cache.py
+# src/act_alike/cache.py
 from __future__ import annotations
 from dataclasses import asdict
 from datetime import datetime, timezone
@@ -7,8 +7,8 @@ import json
 import re
 from pathlib import Path
 
-from term_comparison.llm import DifferenceSummary, VerifiedDifference
-from term_comparison.models import DefinitionOut
+from act_alike.llm import DifferenceSummary, VerifiedDifference
+from act_alike.models import DefinitionOut
 
 
 def _slugify(term: str) -> str:

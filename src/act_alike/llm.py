@@ -1,4 +1,4 @@
-# src/term_comparison/llm.py
+# src/act_alike/llm.py
 from __future__ import annotations
 from dataclasses import dataclass
 import json
@@ -8,7 +8,7 @@ import re
 
 import anthropic
 
-from term_comparison.models import DefinitionOut
+from act_alike.models import DefinitionOut
 
 _LOGGER = logging.getLogger(__name__)
 _NUMBER_RE = re.compile(r"\d+")

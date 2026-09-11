@@ -3,9 +3,9 @@ from __future__ import annotations
 
 import json
 
-from term_comparison.cache import content_hash, list_cached, load_cached, store_cached
-from term_comparison.llm import DifferenceSummary, VerifiedDifference
-from term_comparison.models import DefinitionOut
+from act_alike.cache import content_hash, list_cached, load_cached, store_cached
+from act_alike.llm import DifferenceSummary, VerifiedDifference
+from act_alike.models import DefinitionOut
 
 DEF_A = DefinitionOut(
     display_term="x", definition_text="means A.",

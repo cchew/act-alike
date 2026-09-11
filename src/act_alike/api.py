@@ -1,4 +1,4 @@
-# src/term_comparison/api.py
+# src/act_alike/api.py
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -13,9 +13,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from lexaugraph.resolver import DefinitionResolver
 
-from term_comparison.cache import content_hash, list_cached, load_cached, store_cached
-from term_comparison.llm import summarise_differences
-from term_comparison.models import (
+from act_alike.cache import content_hash, list_cached, load_cached, store_cached
+from act_alike.llm import summarise_differences
+from act_alike.models import (
     ComparisonResponse,
     DefinitionOut,
     DifferenceOut,
@@ -65,7 +65,7 @@ def create_app(
     cache_dir: Path | None = None,
     cache_commit: Callable[[], None] | None = None,
 ) -> FastAPI:
-    app = FastAPI(title="term-comparison", version="0.2.1")
+    app = FastAPI(title="act-alike", version="0.2.2")
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],

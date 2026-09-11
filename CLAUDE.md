@@ -1,4 +1,4 @@
-# IM2026 Term-Comparison Tool
+# Act Alike
 
 Backend for the IM2026 "Build a Bureaucrat Bot" entry. Wraps `lex-au-graph`'s
 `DefinitionResolver` in a FastAPI service — see `README.md` for setup.
@@ -14,7 +14,7 @@ directly on graph-based definition resolution.
 ## Running locally
 
     source .venv/bin/activate
-    term-comparison serve
+    act-alike serve
 
 ## Tests
 

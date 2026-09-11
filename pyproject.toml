@@ -3,8 +3,8 @@ requires = ["setuptools>=72"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "term-comparison"
-version = "0.2.1"
+name = "act-alike"
+version = "0.2.2"
 description = "Legislative term-comparison tool across Commonwealth Acts, built on lex-au-graph — started as an IM2026 'Build a Bureaucrat Bot' entry"
 authors = [{name = "Ching Chew", email = "ching.chew@gmail.com"}]
 license = {text = "MIT"}
@@ -20,7 +20,7 @@ dependencies = [
 Repository = "https://github.com/cchew/act-alike"
 
 [project.scripts]
-term-comparison = "term_comparison.cli:cli"
+act-alike = "act_alike.cli:cli"
 
 [project.optional-dependencies]
 dev = [

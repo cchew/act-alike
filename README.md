@@ -1,6 +1,6 @@
 # Act Alike
 
-Shows how ordinary legal terms (e.g. "personal information", "australian resident") are defined across Commonwealth Acts, with citations. Started as an entry for Innovation Month 2026's "Build a Bureaucrat Bot" challenge (repo name `term-comparison`, deployed as "Act Alike").
+Shows how ordinary legal terms (e.g. "personal information", "australian resident") are defined across Commonwealth Acts, with citations. Started as an entry for Innovation Month 2026's "Build a Bureaucrat Bot" challenge — originally coded and deployed under the working name `term-comparison`, renamed to `act-alike` throughout to match its public "Act Alike" branding.
 
 > [!NOTE]
 > [search.gov.au](https://search.gov.au)'s Align stream ("Common Ground", Dept of Finance, alpha — see [Government content is AI food](https://www.youtube.com/watch?v=X5UAWFl7-FE), APS Digital Profession Innovation Month, July 2026) does this at whole-of-government scale and routes real divergences to SES for resolution.
@@ -70,7 +70,7 @@ cd ../act-alike
 
 ## Run locally
 ```bash
-term-comparison serve
+act-alike serve
 ```
 
 ## Tests
@@ -83,6 +83,7 @@ term-comparison serve
 
 ## Versions
 
+- **v0.2.2** - Renamed repo/package/CLI/deploy identifiers from `term-comparison` to `act-alike` to match the public branding. No functional change.
 - **v0.2.1** - Backlog round: grounding-flag caveat badge surfaced in the UI (was backend-log-only), "most divergent terms" sidebar list ranked by verified-difference/Act ratio, term-browser-toggle analytics event.
 - **v0.2.0** - Growth features: lazy per-term LLM summary cache, Umami analytics (tour, search, citation clicks, feedback), shareable per-term permalinks, thumbs up/down feedback widget, footer version display. Reframed IM2026 as the project's origin, not its primary purpose.
 - **v0.1.4** - IM2026 competition submission. Review fixes on the polish pass: stable-height corpus stats placeholder (fixes guided-tour first-highlight misalignment), "Legend:" label, browse panel no longer overflows the viewport with no search results.

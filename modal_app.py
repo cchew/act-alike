@@ -12,16 +12,16 @@ image = (
     modal.Image.debian_slim(python_version="3.12")
     .pip_install("fastapi>=0.115", "networkx>=3.3", "lxml>=5.3", "anthropic>=0.40.0")
     .add_local_python_source("lexaugraph")
-    .add_local_python_source("term_comparison")
+    .add_local_python_source("act_alike")
     .add_local_file(str(GRAPH_JSON), "/root/graph.json")
 )
 
-app = modal.App("term-comparison", image=image)
+app = modal.App("act-alike", image=image)
 
 # Persists LLM-summary cache entries and feedback records (cache.py) across
 # container restarts/redeploys. Populated lazily by real requests — no
 # pre-warming or separate ingest step needed here.
-cache_volume = modal.Volume.from_name("term-comparison-cache", create_if_missing=True)
+cache_volume = modal.Volume.from_name("act-alike-cache", create_if_missing=True)
 
 
 @app.function(
@@ -29,14 +29,14 @@ cache_volume = modal.Volume.from_name("term-comparison-cache", create_if_missing
     secrets=[modal.Secret.from_name("anthropic-api-key")],
     volumes={"/cache": cache_volume},
 )
-@modal.asgi_app(label="term-comparison-api")
+@modal.asgi_app(label="act-alike-api")
 def fastapi_app():
     import os
     from pathlib import Path as _Path
     import anthropic
     from lexaugraph.graph import LexAuGraph
     from lexaugraph.resolver import DefinitionResolver
-    from term_comparison.api import create_app
+    from act_alike.api import create_app
 
     graph = LexAuGraph.load(_Path("/root/graph.json"))
     resolver = DefinitionResolver(graph)
