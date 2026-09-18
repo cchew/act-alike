@@ -1,5 +1,7 @@
 # Act Alike
 
+_Blog post: [Act Alike: Are Terms Defined Consistently Across Legislation?](https://www.herdmentality.xyz/blog/act-alike)_
+
 Shows how ordinary legal terms (e.g. "personal information", "australian resident") are defined across Commonwealth Acts, with citations. Started as an entry for Innovation Month 2026's "Build a Bureaucrat Bot" challenge — originally coded and deployed under the working name `term-comparison`, renamed to `act-alike` throughout to match its public "Act Alike" branding.
 
 > [!NOTE]
