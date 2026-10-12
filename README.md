@@ -42,6 +42,16 @@ GET /definitions?term=personal+information
 
 Most Acts that use "personal information" defer to the Privacy Act 1988's definition. The Ombudsman Act 1976 is the interesting case above - it defers to the Private Health Insurance Act 2007 instead, a different Act to what every other consumer of the term points to. Surfacing exactly this kind of divergence, with citations, is what this tool is for.
 
+## State and territory Acts
+
+When the graph also holds state or territory Acts (built with [lex-au-privacy](https://github.com/cchew/lex-au-privacy)), the API and UI adapt:
+
+- Each definition carries `jurisdiction` (`Cth`, `NSW`, `Vic`, ...) and `scope`. `act_title` gains the jurisdiction for anything that is not Commonwealth ("Privacy and Data Protection Act 2014 (Vic)"), so same-named Acts are distinguishable in the cards and in the LLM comparison.
+- `GET /definitions?term=...&include_local=true` (also `/definitions/quick`) adds meanings that apply only inside one section, Part or Division. The default is Act-wide meanings only. The UI shows a checkbox for this once the corpus has more than one jurisdiction, and labels such a card "local to ...".
+- Duplicate-looking cards are tidied per Act: an internal pointer ("has the meaning given by section 5") is dropped when the Act has the real definition, and an "includes ..." supplement is merged into the "means ..." definition of the same section. Genuinely different meanings in different sections or Parts stay separate.
+- `GET /stats` also returns `jurisdictions`; the page wording says "Commonwealth" for a Commonwealth-only corpus and "Australian" otherwise.
+- Cards for non-Commonwealth Acts have no legislation.gov.au link.
+
 ## Setup
 
 Clone this repo and lex-au-graph as siblings:

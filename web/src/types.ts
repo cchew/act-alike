@@ -39,4 +39,5 @@ export interface Stats {
   acts: number;
   defined_terms: number;
   multi_act_terms: number;
+  jurisdictions?: string[];
 }

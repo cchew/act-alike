@@ -150,6 +150,27 @@ watch(coverageWarning, (val) => {
   if (val) track("coverage_warning_shown", { term: term.value });
 });
 
+const includeLocal = ref(false);
+const jurisdictions = ref<string[]>(["Cth"]);
+// "Commonwealth" until the corpus also holds state or territory Acts.
+const corpusLabel = computed(() => (jurisdictions.value.length <= 1 && jurisdictions.value[0] === "Cth" ? "Commonwealth" : "Australian"));
+
+onMounted(async () => {
+  try {
+    const res = await fetch(`${API_BASE}/stats`);
+    if (res.ok) {
+      const stats = await res.json();
+      if (Array.isArray(stats.jurisdictions) && stats.jurisdictions.length) jurisdictions.value = stats.jurisdictions;
+    }
+  } catch {
+    /* label stays "Commonwealth"; CorpusStats reports the failure */
+  }
+});
+
+function localParam(): string {
+  return includeLocal.value ? "&include_local=true" : "";
+}
+
 async function search(t: string) {
   if (!t.trim()) return;
   term.value = t;
@@ -159,9 +180,9 @@ async function search(t: string) {
   result.value = null;
   startDots();
   try {
-    const quickRes = await fetch(`${API_BASE}/definitions/quick?term=${encodeURIComponent(t)}`);
+    const quickRes = await fetch(`${API_BASE}/definitions/quick?term=${encodeURIComponent(t)}${localParam()}`);
     if (quickRes.status === 404) {
-      error.value = `No Commonwealth Act defines "${t}".`;
+      error.value = `No ${corpusLabel.value} Act defines "${t}".`;
       track("search_no_result", { term: t });
       return;
     }
@@ -180,7 +201,7 @@ async function search(t: string) {
     }
 
     summarising.value = true;
-    const fullRes = await fetch(`${API_BASE}/definitions?term=${encodeURIComponent(t)}`);
+    const fullRes = await fetch(`${API_BASE}/definitions?term=${encodeURIComponent(t)}${localParam()}`);
     if (fullRes.ok && quick.term === t) {
       const full: ComparisonResponse = await fullRes.json();
       result.value = {
@@ -209,7 +230,7 @@ async function search(t: string) {
           <button type="button" class="help-btn" @click="openAbout" aria-label="How Act Alike works">?</button>
           <button type="button" class="tour-btn" @click="launchTour('manual')">Take the tour</button>
         </div>
-        <p class="subtitle">Term comparison across Commonwealth Acts: does this legal term mean the same thing everywhere it's used?</p>
+        <p class="subtitle">Term comparison across {{ corpusLabel }} Acts: does this legal term mean the same thing everywhere it's used?</p>
       </div>
       <CorpusStats />
     </header>
@@ -222,6 +243,10 @@ async function search(t: string) {
             <input id="term-search" v-model="term" type="text" placeholder="e.g. personal information" class="search-input" />
             <button type="submit" class="search-btn">Compare</button>
           </form>
+          <label v-if="jurisdictions.length > 1 || includeLocal" class="local-toggle">
+            <input v-model="includeLocal" type="checkbox" />
+            Include meanings that apply only inside one section or Part
+          </label>
           <nav class="flagship-nav" aria-label="Flagship term shortcuts">
             <button
               v-for="t in FLAGSHIP_TERMS"
@@ -608,5 +633,12 @@ async function search(t: string) {
 .help-btn:focus-visible {
   outline: 2px solid var(--color-accent-border);
   outline-offset: 2px;
+}
+.local-toggle {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
 }
 </style>

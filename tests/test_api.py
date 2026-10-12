@@ -723,3 +723,32 @@ def test_local_meanings_only_with_include_local() -> None:
         "/definitions/quick", params={"term": "personal information", "include_local": "true"}
     ).json()["definitions"]
     assert {d["scope"] for d in with_local} == {"act", "part-2__sec-11"}
+
+
+def test_stats_lists_jurisdictions() -> None:
+    client = TestClient(create_app(_multi_jurisdiction_resolver()))
+    assert client.get("/stats").json()["jurisdictions"] == ["Cth", "Vic"]
+
+
+def test_duplicate_cards_are_tidied_per_act() -> None:
+    graph = LexAuGraph()
+    uri = "/akn/au-nsw/act/2002/71"
+    graph.add_act_data(ActData(
+        act_node=ActNode(frbr_uri=uri, title="Health Records and Information Privacy Act 2002", year=2002),
+        sections=[SectionNode(eid=e, act_frbr_uri=uri, heading="Definitions", text="x") for e in ("sec-3", "sec-5")],
+        defined_terms=[], ref_edges=[],
+    ))
+    for i, (eid, text) in enumerate([
+        ("sec-3", "has the meaning given by section 5."),
+        ("sec-5", "means information or an opinion about an individual."),
+        ("sec-5", "includes such things as fingerprints."),
+    ], start=1):
+        graph.add_defined_term(DefinedTermNode(
+            term="personal information", display_term="personal information", act_frbr_uri=uri,
+            section_eid=eid, definition_text=text, occurrence=i,
+        ))
+    client = TestClient(create_app(DefinitionResolver(graph)))
+    defs = client.get("/definitions/quick", params={"term": "personal information"}).json()["definitions"]
+    assert len(defs) == 1
+    assert defs[0]["section_eid"] == "sec-5"
+    assert defs[0]["definition_text"].endswith("includes such things as fingerprints.")

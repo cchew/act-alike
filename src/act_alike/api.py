@@ -11,7 +11,7 @@ import anthropic
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from lexaugraph.resolver import DefinitionResolver
+from lexaugraph.resolver import DefinitionResolver, tidy_definitions
 
 from act_alike.cache import content_hash, list_cached, load_cached, store_cached
 from act_alike.llm import summarise_differences
@@ -74,7 +74,7 @@ def create_app(
     )
 
     def _resolve_definitions(term: str, include_local: bool = False) -> list[DefinitionOut]:
-        results = resolver.find_all_definitions(term, include_local=include_local)
+        results = tidy_definitions(resolver.find_all_definitions(term, include_local=include_local))
         if not results:
             raise HTTPException(status_code=404, detail=f"No definitions found for '{term}'")
         return [
@@ -154,6 +154,7 @@ def create_app(
             acts=resolver.count_acts(),
             defined_terms=resolver.count_valid_defined_terms(),
             multi_act_terms=len(resolver.list_multi_act_terms(min_acts=3)),
+            jurisdictions=resolver.jurisdictions(),
         )
 
     @app.get("/terms", response_model=list[MultiActTermOut])

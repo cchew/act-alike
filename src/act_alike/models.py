@@ -34,6 +34,7 @@ class StatsOut(BaseModel):
     acts: int
     defined_terms: int
     multi_act_terms: int
+    jurisdictions: list[str] = ["Cth"]
 
 
 class MultiActTermOut(BaseModel):

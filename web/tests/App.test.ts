@@ -569,3 +569,50 @@ describe("App", () => {
     });
   });
 });
+
+describe("App: state and territory corpus", () => {
+  const multi = () =>
+    vi.fn(async (url: string) => {
+      if (url.includes("/stats"))
+        return { ok: true, status: 200, json: async () => ({ acts: 9, defined_terms: 500, multi_act_terms: 14, jurisdictions: ["Cth", "NSW", "Vic"] }) };
+      if (url.includes("/terms")) return { ok: true, status: 200, json: async () => [] };
+      return { ok: true, status: 200, json: async () => RESPONSE };
+    });
+
+  beforeEach(() => {
+    localStorage.setItem(TOUR_SEEN_KEY, "1");
+    window.history.pushState(null, "", "/");
+  });
+
+  it("keeps the Commonwealth wording and hides the local toggle for a Cth-only corpus", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url.includes("/stats")) return { ok: true, status: 200, json: async () => ({ acts: 1, defined_terms: 1, multi_act_terms: 0, jurisdictions: ["Cth"] }) };
+      return { ok: true, status: 200, json: async () => [] };
+    }));
+    const wrapper = mount(App);
+    await flushPromises();
+    expect(wrapper.text()).toContain("across Commonwealth Acts");
+    expect(wrapper.find(".local-toggle").exists()).toBe(false);
+  });
+
+  it("switches wording and offers the local toggle once states are in the corpus", async () => {
+    vi.stubGlobal("fetch", multi());
+    const wrapper = mount(App);
+    await flushPromises();
+    expect(wrapper.text()).toContain("across Australian Acts");
+    expect(wrapper.find(".local-toggle").exists()).toBe(true);
+  });
+
+  it("sends include_local when the toggle is on", async () => {
+    const fetchMock = multi();
+    vi.stubGlobal("fetch", fetchMock);
+    const wrapper = mount(App);
+    await flushPromises();
+    await wrapper.find(".local-toggle input").setValue(true);
+    await wrapper.find(".search-input").setValue("personal information");
+    await wrapper.find(".search-row").trigger("submit.prevent");
+    await flushPromises();
+    const urls = fetchMock.mock.calls.map((c) => String(c[0]));
+    expect(urls.some((u) => u.includes("/definitions/quick") && u.includes("include_local=true"))).toBe(true);
+  });
+});
