@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 import json
+import logging
 from pathlib import Path
 import re
 from typing import Callable
@@ -114,6 +115,8 @@ def create_app(
                     # The LLM summary is an enhancement, not the product. A failure here
                     # (network error, SDK exception not subclassing anthropic.APIError,
                     # malformed response, etc.) must never break the core definitions result.
+                    # It is logged so a silent loss of the summary shows up in the server log.
+                    logging.getLogger(__name__).warning("difference summary failed for %r", term, exc_info=True)
                     diff_result = None
                 if diff_result is not None and cache_dir is not None:
                     store_cached(cache_dir, term, current_hash, diff_result, act_count=len(definitions))

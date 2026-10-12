@@ -224,3 +224,35 @@ def test_summarise_differences_sets_has_unverified_span_false_when_grounded():
 
     assert result is not None
     assert result.has_unverified_span is False
+
+
+def test_summarise_differences_works_when_the_sdk_rejects_temperature():
+    """Anthropic SDK 1.x no longer accepts temperature; the call must be retried without it."""
+    response = MagicMock()
+    response.content = [MagicMock(text=json.dumps({
+        "summary": "Narrower versus broader.",
+        "differences": [{"act_title": "Privacy Act 1988", "quote": "information about an identified individual", "note": "narrower"}],
+        "confidence": "high",
+    }))]
+
+    def create(**kwargs):
+        if "temperature" in kwargs:
+            raise TypeError("Messages.create() got an unexpected keyword argument 'temperature'")
+        return response
+
+    client = MagicMock()
+    client.messages.create.side_effect = create
+    result = summarise_differences("personal information", [DEF_A, DEF_B], client)
+    assert result is not None and result.summary == "Narrower versus broader."
+
+
+def test_reply_budget_grows_with_the_number_of_definitions():
+    response = MagicMock()
+    response.content = [MagicMock(text="not json")]
+    client = MagicMock()
+    client.messages.create.return_value = response
+    many = [DEF_A.model_copy(update={"act_title": f"Act {i}"}) for i in range(9)]
+    summarise_differences("t", [DEF_A, DEF_B], client)
+    summarise_differences("t", many, client)
+    small, large = (c.kwargs["max_tokens"] for c in client.messages.create.call_args_list)
+    assert small == 1024 and large > small and large <= 4096

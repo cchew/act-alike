@@ -125,14 +125,21 @@ def summarise_differences(
     by_act = {d.act_title: d for d in definitions}
     prompt = build_difference_prompt(term, definitions)
 
+    request = dict(
+        model=_default_model(),
+        # The JSON reply grows with the number of definitions compared; 1024 truncated mid-string
+        # (invalid JSON, silently no summary) once nine Acts were compared.
+        max_tokens=min(4096, 1024 + 384 * max(0, len(definitions) - 3)),
+        system=_SYSTEM_PROMPT,
+        messages=[{"role": "user", "content": prompt}],
+    )
     try:
-        response = client.messages.create(
-            model=_default_model(),
-            max_tokens=1024,
-            temperature=0,
-            system=_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": prompt}],
-        )
+        try:
+            response = client.messages.create(temperature=0, **request)
+        except TypeError:
+            # Anthropic SDK 1.x dropped the temperature argument; modal_app.py installs the SDK
+            # unpinned, so a fresh deploy would otherwise lose the summary without any error.
+            response = client.messages.create(**request)
     except anthropic.APIError:
         return None
 
