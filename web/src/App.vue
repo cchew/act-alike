@@ -136,7 +136,7 @@ const coverageWarning = computed<string | null>(() => {
   const titles = new Set(result.value.definitions.map((d) => d.act_title));
   const missing = new Set<string>();
   for (const d of result.value.definitions) {
-    const ref = detectCrossReference(d.definition_text, d.act_title);
+    const ref = detectCrossReference(d.definition_text, d.act_title.replace(/\s\((?:NSW|Vic|Qld|WA|SA|Tas|ACT|NT)\)$/, ""));
     if (ref && !titles.has(ref)) missing.add(ref);
   }
   if (missing.size === 0) return null;

@@ -9,9 +9,11 @@ from pydantic import BaseModel
 class DefinitionOut(BaseModel):
     display_term: str
     definition_text: str
-    act_title: str
+    act_title: str  # Act title; non-Commonwealth Acts carry the jurisdiction, e.g. "... Act 2014 (Vic)"
     act_frbr_uri: str
     section_eid: str
+    jurisdiction: str = "Cth"
+    scope: str = "act"  # "act", or the container a local definition applies to (only with include_local)
 
 
 class DifferenceOut(BaseModel):

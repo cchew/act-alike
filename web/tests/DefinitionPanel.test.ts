@@ -205,3 +205,32 @@ describe("DefinitionPanel", () => {
     expect(track).toHaveBeenCalledWith("citation_clicked", { act_title: "Privacy Act 1988" });
   });
 });
+
+describe("DefinitionPanel: state and territory Acts", () => {
+  const VIC: DefinitionOut = {
+    display_term: "personal information",
+    definition_text: "personal information means information or an opinion about an individual.",
+    act_title: "Privacy and Data Protection Act 2014 (Vic)",
+    act_frbr_uri: "/akn/au-vic/act/2014/60",
+    section_eid: "part-1__sec-3",
+    jurisdiction: "Vic",
+  };
+
+  it("shows the jurisdiction in the chip and no legislation.gov.au link", () => {
+    const wrapper = mount(DefinitionPanel, { props: { definitions: [DEFS[0]!, VIC] } });
+    expect(wrapper.text()).toContain("Privacy and Data Protection Act 2014 (Vic)");
+    expect(wrapper.findAll(".citation-link")).toHaveLength(1);
+  });
+
+  it("does not treat an Act citing its own title as a cross-reference", () => {
+    const own: DefinitionOut = { ...VIC, definition_text: "in the Privacy and Data Protection Act 2014." };
+    const wrapper = mount(DefinitionPanel, { props: { definitions: [own] } });
+    expect(wrapper.text()).not.toContain("Adopts the definition from");
+  });
+
+  it("labels a local meaning with the container it applies to", () => {
+    const local: DefinitionOut = { ...VIC, scope: "part-2__sec-11" };
+    const wrapper = mount(DefinitionPanel, { props: { definitions: [local] } });
+    expect(wrapper.text()).toContain("local to");
+  });
+});

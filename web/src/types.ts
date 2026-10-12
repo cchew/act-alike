@@ -5,6 +5,8 @@ export interface DefinitionOut {
   act_title: string;
   act_frbr_uri: string;
   section_eid: string;
+  jurisdiction?: string;
+  scope?: string;
 }
 
 export interface DifferenceOut {

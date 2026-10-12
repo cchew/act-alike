@@ -60,8 +60,17 @@ function segmentsFor(d: DefinitionOut): Segment[] {
   return segments;
 }
 
+// Non-Commonwealth titles carry a trailing "(Vic)" etc.; the cited text does not.
+function plainTitle(title: string): string {
+  return title.replace(/\s\((?:NSW|Vic|Qld|WA|SA|Tas|ACT|NT)\)$/, "");
+}
+
+function isCommonwealth(d: DefinitionOut): boolean {
+  return (d.jurisdiction ?? "Cth") === "Cth";
+}
+
 function crossReferenceFor(d: DefinitionOut): string | null {
-  return detectCrossReference(d.definition_text, d.act_title);
+  return detectCrossReference(d.definition_text, plainTitle(d.act_title));
 }
 
 function crossReferenceDetailFor(d: DefinitionOut): string | null {
@@ -83,8 +92,9 @@ function onCitationClick(actTitle: string): void {
       class="definition-card"
       :class="{ 'cross-reference-card': crossReferenceFor(d) }"
     >
-      <div class="source-chip mono">{{ d.act_title }} · {{ formatSectionCitation(d.section_eid) }}</div>
+      <div class="source-chip mono">{{ d.act_title }} · {{ formatSectionCitation(d.section_eid) }}<span v-if="d.scope && d.scope !== 'act'"> · local to {{ formatSectionCitation(d.scope) }}</span></div>
       <a
+        v-if="isCommonwealth(d)"
         class="citation-link"
         :href="legislationSearchUrl(d.act_title)"
         target="_blank"

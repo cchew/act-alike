@@ -679,3 +679,47 @@ def test_post_feedback_rejects_invalid_vote():
 
     response = client.post("/feedback", json={"term": "x", "vote": "sideways"})
     assert response.status_code == 422
+
+
+def _multi_jurisdiction_resolver() -> DefinitionResolver:
+    graph = LexAuGraph()
+    for uri, title, year, scope, eid in [
+        ("/akn/au/act/1988/119", "Privacy Act 1988", 1988, "act", "sec-6"),
+        ("/akn/au-vic/act/2014/60", "Privacy and Data Protection Act 2014", 2014, "act", "part-1__sec-3"),
+        ("/akn/au-vic/act/2014/60", "Privacy and Data Protection Act 2014", 2014, "part-2__sec-11", "part-2__sec-11"),
+    ]:
+        if uri not in graph.graph.nodes:
+            graph.add_act_data(ActData(
+                act_node=ActNode(frbr_uri=uri, title=title, year=year),
+                sections=[SectionNode(eid=eid, act_frbr_uri=uri, heading="Definitions", text="x")],
+                defined_terms=[], ref_edges=[],
+            ))
+    for uri, scope, eid, text in [
+        ("/akn/au/act/1988/119", "act", "sec-6", "means information about an identified individual."),
+        ("/akn/au-vic/act/2014/60", "act", "part-1__sec-3", "means information or an opinion about an individual."),
+        ("/akn/au-vic/act/2014/60", "part-2__sec-11", "part-2__sec-11", "means data used inside Part 2 only."),
+    ]:
+        graph.add_defined_term(DefinedTermNode(
+            term="personal information", display_term="personal information", act_frbr_uri=uri,
+            section_eid=eid, definition_text=text, scope=scope, occurrence=1 if scope == "act" else 2,
+        ))
+    return DefinitionResolver(graph)
+
+
+def test_state_acts_carry_jurisdiction_and_label() -> None:
+    client = TestClient(create_app(_multi_jurisdiction_resolver()))
+    defs = client.get("/definitions/quick", params={"term": "personal information"}).json()["definitions"]
+    by_j = {d["jurisdiction"]: d for d in defs}
+    assert set(by_j) == {"Cth", "Vic"}
+    assert by_j["Cth"]["act_title"] == "Privacy Act 1988"
+    assert by_j["Vic"]["act_title"] == "Privacy and Data Protection Act 2014 (Vic)"
+
+
+def test_local_meanings_only_with_include_local() -> None:
+    client = TestClient(create_app(_multi_jurisdiction_resolver()))
+    default = client.get("/definitions/quick", params={"term": "personal information"}).json()["definitions"]
+    assert {d["scope"] for d in default} == {"act"}
+    with_local = client.get(
+        "/definitions/quick", params={"term": "personal information", "include_local": "true"}
+    ).json()["definitions"]
+    assert {d["scope"] for d in with_local} == {"act", "part-2__sec-11"}

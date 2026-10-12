@@ -73,33 +73,35 @@ def create_app(
         allow_headers=["*"],
     )
 
-    def _resolve_definitions(term: str) -> list[DefinitionOut]:
-        results = resolver.find_all_definitions(term)
+    def _resolve_definitions(term: str, include_local: bool = False) -> list[DefinitionOut]:
+        results = resolver.find_all_definitions(term, include_local=include_local)
         if not results:
             raise HTTPException(status_code=404, detail=f"No definitions found for '{term}'")
         return [
             DefinitionOut(
                 display_term=r.display_term,
                 definition_text=r.definition_text,
-                act_title=r.act_title,
+                act_title=r.act_label,
                 act_frbr_uri=r.act_frbr_uri,
                 section_eid=r.section_eid,
+                jurisdiction=r.jurisdiction,
+                scope=r.scope,
             )
             for r in results
         ]
 
     @app.get("/definitions/quick", response_model=ComparisonResponse)
-    def get_definitions_quick(term: str) -> ComparisonResponse:
+    def get_definitions_quick(term: str, include_local: bool = False) -> ComparisonResponse:
         """Definitions only, no LLM call — lets the frontend render Act panels
         immediately instead of waiting on the difference-summary round trip,
         which is what actually scales with how many Acts there are to compare.
         """
-        definitions = _resolve_definitions(term)
+        definitions = _resolve_definitions(term, include_local)
         return ComparisonResponse(term=term, definitions=definitions, difference_summary=None, differences=[])
 
     @app.get("/definitions", response_model=ComparisonResponse)
-    def get_definitions(term: str) -> ComparisonResponse:
-        definitions = _resolve_definitions(term)
+    def get_definitions(term: str, include_local: bool = False) -> ComparisonResponse:
+        definitions = _resolve_definitions(term, include_local)
         diff_result = None
         if client is not None and len(definitions) >= 2:
             current_hash = content_hash(definitions)
